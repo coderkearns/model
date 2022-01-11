@@ -75,8 +75,9 @@ class Model {
      * @returns {Row}
      */
     create(data) {
-        const row = new Row(this, data);
-        this._createObject(row);
+        const id = this.nextId();
+        let row = new Row(this, { ...data, id });
+        row = this._createObject(row);
         this.save(row);
         return row;
     }
@@ -99,6 +100,19 @@ class Model {
                 row.data[key] = type.default()
             }
         }
+        return row;
+    }
+
+    /**
+     * Creates multiple rows in the database at once.
+     * @param {Array<Object>} data
+     * @returns {Array<Row>}
+     */
+    seed(data = []) {
+        if (!Array.isArray(data)) {
+            data = [data];
+        }
+        return data.map(row => this.create(row));
     }
 
     /**
@@ -108,7 +122,7 @@ class Model {
      * @see {@link Model#where}
      */
     get(id) {
-        return this.where(row => row.id == id).first();
+        return this.where(row => row.data.id === id).first();
     }
 
     /**
@@ -119,7 +133,7 @@ class Model {
      * @see {@link QueryFunction}
      */
     where(queryFunction) {
-        const items = this.data.filter(queryFunction);
+        const items = this.data.filter(queryFunction)
         return new Query(this, items);
     }
 
@@ -137,11 +151,12 @@ class Model {
      * @param {Row} row
      */
     save(row) {
-        const index = this.data.findIndex(r => r.id == row.id);
-        if (index == -1) {
-            this.data.push(row);
-        } else {
+        if (this.count == 0) return this.data = [row];
+        const index = this.data.indexOf(row);
+        if (index > -1) {
             this.data[index] = row;
+        } else {
+            this.data.push(row);
         }
     }
 
@@ -242,8 +257,8 @@ class Model {
      * @returns {number}
      */
     nextId() {
-        if (this.count == 0) return 1;
-        return this.data.at(-1).id + 1;
+        const last = this.data[this.data.length - 1];
+        return last ? last.data.id + 1 : 1;
     }
 
     /**

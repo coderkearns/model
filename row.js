@@ -20,17 +20,23 @@ row.bio = newBio;
 
 row.save();
 */
+const util = require('util');
 
 class Row {
     constructor(model, data) {
         this.model = model;
         this.data = data;
-        for (let key in model.fields) {
-            Object.defineProperty(this, key, {
-                get: () => this.data[key],
-                set: value => this.data[key] = value
-            });
-        }
+        return new Proxy(this, {
+            get: (target, key) => {
+                if (key in target) return target[key];
+                if (key in target.data) return target.data[key];
+                return undefined;
+            },
+            set: (target, key, value) => {
+                target.data[key] = value;
+                return true;
+            }
+        })
     }
 
     get(key) {
@@ -47,6 +53,10 @@ class Row {
 
     toString() {
         return `Row<${this.model.name}>`;
+    }
+
+    [util.inspect.custom](depth, options) {
+        return `Row(${this.data.id})`
     }
 
     toJSON() {

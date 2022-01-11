@@ -1,4 +1,6 @@
 // Represents a field type in a Model.
+const util = require('util');
+
 class Type {
     // Returns a function (the field) that returns a function to create rows.
     constructor(name, { default: typeDefault, behavior = (value) => value }) {
@@ -17,6 +19,7 @@ class Type {
                     return item
                 }), defaultValue
             });
+            type[util.inspect.custom] = () => `Type<${name}>`;
             Object.defineProperty(type, 'name', { value: name });
             return type;
         }
@@ -47,6 +50,7 @@ const types = {
             }
             get.toJSON = () => id;
             Object.defineProperty(get, 'name', { value: `_REF_${Model.name}` });
+            Object.defineProperty(get, "value", { get: () => id, set: () => false });
             return get
         }
     })
